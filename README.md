@@ -63,10 +63,17 @@ app/
 │   ├── jobs.py             # GET /api/jobs · GET /api/jobs/{id}
 │   ├── tables.py           # GET /api/jobs/{id}/tables/{idx}.csv
 │   └── demo.py             # GET /api/demo  (works without Docling)
-└── web/streamlit_app.py    # drag-drop UI, tabs, downloads, quality panel
+└── web/streamlit_app.py    # internal QA tool — fast iteration
+
+web/                        # Next.js 14 + TS + Tailwind (the GTM surface)
+├── src/
+│   ├── app/                # App Router: layout.tsx · page.tsx · globals.css
+│   ├── components/         # DropZone · PdfViewer (react-pdf) · ExtractionPanel · ...
+│   └── lib/                # api.ts (typed fetch) · types.ts (mirrors core/types.py)
+└── package.json            # Next 14.2 · react-pdf 9 · Tailwind 3
 ```
 
-Internal types live in `app/core/types.py`. **Nothing outside `docling_runner.py` imports `docling`** — that's how the API and tests stay green when the heavy extra isn't installed.
+Internal types live in `app/core/types.py` and are mirrored by `web/src/lib/types.ts`. **Nothing outside `docling_runner.py` imports `docling`** — that's how the API and tests stay green when the heavy extra isn't installed.
 
 ---
 
@@ -92,19 +99,33 @@ If `[extract]` is not installed, the service runs in **demo mode** — it return
 
 ## Run
 
-Terminal A — API:
+The repo ships **two clients** against the same FastAPI backend:
+
+| Client | Path | Use when |
+|---|---|---|
+| **Streamlit** (`app/web/streamlit_app.py`) | `make dev-ui` → `:8501` | Internal QA / fast iteration with engineers |
+| **Next.js** (`web/`) — *new* | `make dev-web` → `:3000` | External demos, sales surface, embedding into KDAN PDF Reader / DottedSign. PDF.js side-by-side preview lives here. |
+
+Run the backend (required for either client):
 
 ```bash
-API_PORT=8204 ./scripts/dev_api.sh
+make dev-api               # uvicorn → http://127.0.0.1:8000
 ```
 
-Terminal B — UI:
+### Next.js (recommended for demos)
 
 ```bash
-UI_API_URL=http://127.0.0.1:8204 streamlit run app/web/streamlit_app.py --server.port 8604
+make web-install           # one-time: npm install inside web/
+make dev-web               # http://localhost:3000
 ```
 
-Open <http://127.0.0.1:8604>, drop in a PDF, or click **Load demo extraction** in the sidebar.
+Drop a PDF on the dropzone — left pane renders the original PDF (via `react-pdf`), right pane has tabs for Markdown / Tables / RAG chunks / Sections / Quality. Click any chunk's `p.N →` button to jump the PDF to that page. No PDF? Click **Load demo extraction** for a pre-baked dataset.
+
+### Streamlit (internal QA)
+
+```bash
+make dev-ui                # http://127.0.0.1:8501
+```
 
 ---
 
@@ -162,7 +183,8 @@ What it *isn't yet* (and what shipping requires):
 
 - [ ] **Hardened deployment** — Dockerfile, single-binary install, health/readiness probes
 - [ ] **Auth + multi-tenancy** — API keys, per-tenant quotas, audit log
-- [ ] **Side-by-side preview** — render the original page next to the extracted Markdown for QA (needs `pdf2image` + page thumbnails)
+- [x] **Side-by-side preview** — done in `web/` (Next.js + react-pdf with click-to-jump)
+- [ ] **Highlight on hover** — when hovering a chunk, draw a bbox on the PDF page (needs Docling provenance bboxes piped through)
 - [ ] **Batch UI** — drop a folder, get a zip of artifacts
 - [ ] **Swap out the in-memory job store** for Redis/Celery; add retry + dead-letter
 - [ ] **Adapters for KDAN PDF Reader & DottedSign** — extracted form fields → signer slots; extracted tables → fillable form templates

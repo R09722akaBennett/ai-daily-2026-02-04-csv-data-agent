@@ -14,7 +14,10 @@ class Settings(BaseSettings):
     api_port: int = 8000
     api_base_path: str = "/api"
 
-    allowed_origins: str = "http://localhost:8501,http://127.0.0.1:8501"
+    allowed_origins: str = (
+        "http://localhost:3000,http://127.0.0.1:3000,"
+        "http://localhost:8501,http://127.0.0.1:8501"
+    )
     ui_api_url: str = "http://127.0.0.1:8000"
 
     data_dir: str = "./data"
