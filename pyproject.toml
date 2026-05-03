@@ -3,11 +3,13 @@ requires = ["setuptools>=69", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "crypto-agent-research"
+name = "kdoc-idp"
 version = "0.1.0"
-description = "Multi-agent crypto research system: Scout / Analyst / Trader / Risk / Reflector via Claude SDK"
+description = "Self-hosted IDP service powered by Docling — turn messy enterprise documents into LLM-ready Markdown, JSON, and tables."
 readme = "README.md"
 requires-python = ">=3.11"
+# Core service deps stay light so CI / tests / cold demos start in seconds.
+# Real document extraction needs the [extract] extra (pulls in Docling + torch).
 dependencies = [
   "fastapi>=0.110",
   "uvicorn[standard]>=0.27",
@@ -18,10 +20,15 @@ dependencies = [
   "structlog>=24.1",
   "rich>=13.7",
   "streamlit>=1.31",
-  "anthropic>=0.40",
+  "python-multipart>=0.0.9",
 ]
 
 [project.optional-dependencies]
+extract = [
+  # Heavy: pulls torch + transformers + IBM layout/table models on first run.
+  # Pin a recent floor; let the user upgrade.
+  "docling>=2.0",
+]
 dev = [
   "pytest>=8.0",
   "pytest-asyncio>=0.23",
