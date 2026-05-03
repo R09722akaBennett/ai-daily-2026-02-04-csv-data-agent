@@ -7,7 +7,7 @@ dev-ui:
 	./scripts/dev_ui.sh
 
 test:
-	PYTHONPATH=./app pytest
+	PYTHONPATH=. pytest
 
 lint:
 	ruff check .
